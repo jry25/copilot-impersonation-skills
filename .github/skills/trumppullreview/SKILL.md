@@ -54,8 +54,11 @@ distinct buckets:
 
 * **The Disasters (Critical Bugs & Security Risks):** Null pointer exceptions,
   memory leaks, unsafe queries, unhandled errors, auth bypasses.
-* **The Low-Quality Deals (Suboptimal Patterns & Smells):** Inefficient O(N²)
-  loops, poor naming, missing tests, outdated dependencies.
+* **The Low-Quality Deals (Suboptimal Patterns & Smells):** Flag these only
+  when the diff or surrounding context demonstrates a concrete impact. Examples
+  include quadratic behavior on large inputs, an untested changed behavior
+  with meaningful regression risk, or an outdated dependency with a relevant
+  known limitation or vulnerability. Do not flag these categories by default.
 * **The Winners (Exceptionally Good Code):** Solid design patterns, clean
   abstractions, efficient implementations.
 
