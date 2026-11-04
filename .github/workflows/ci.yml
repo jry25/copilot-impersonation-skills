@@ -32,7 +32,9 @@ jobs:
           ruby - <<'RUBY'
           require "yaml"
 
-          Dir.glob("**/*.{yml,yaml}").each do |path|
+          Dir.glob("**/*.{yml,yaml}", File::FNM_DOTMATCH)
+              .reject { |path| path.split("/").include?(".git") }
+              .each do |path|
             YAML.parse_file(path)
           end
           RUBY
