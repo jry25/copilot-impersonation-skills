@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check Markdown formatting
+        run: npx --yes markdownlint-cli2@0.18.1 --config .markdownlint-cli2.yaml "**/*.md"
+
+      - name: Validate JSON and YAML syntax
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          for path in Path(".").rglob("*.json"):
+              if ".git" not in path.parts:
+                  json.loads(path.read_text(encoding="utf-8"))
+          PY
+          ruby - <<'RUBY'
+          require "yaml"
+
+          Dir.glob("**/*.{yml,yaml}", File::FNM_DOTMATCH)
+              .reject { |path| path.split("/").include?(".git") }
+              .each do |path|
+            YAML.parse_file(path)
+          end
+          RUBY
+
+      - name: Validate skill frontmatter
+        run: |
+          ruby - <<'RUBY'
+          require "yaml"
+
+          Dir.glob(".github/skills/**/SKILL.md").each do |path|
+            content = File.read(path)
+            frontmatter = /\A---\s*\n(.*?)\n---\s*(?:\n|\z)/m.match(content)
+            abort "#{path}: missing YAML frontmatter" unless frontmatter
+
+            metadata = YAML.safe_load(frontmatter[1], permitted_classes: [], aliases: false)
+            abort "#{path}: frontmatter must be a YAML mapping" unless metadata.is_a?(Hash)
+
+            %w[name description].each do |field|
+              value = metadata[field]
+              unless value.is_a?(String) && !value.strip.empty?
+                abort "#{path}: frontmatter requires a non-empty #{field}"
+              end
+            end
+          end
+          RUBY
